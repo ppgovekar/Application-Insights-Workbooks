@@ -1,0 +1,647 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Interactive vs Non-Interactive Sign-ins"
+      },
+      "name": "text - 0"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Summary of Sign-ins by Type and Status"
+      },
+      "name": "text - 3"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "d72f757e-272b-4d3e-9bec-d60f9b83ed78",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 2592000000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          },
+          {
+            "id": "a05e1687-1ea2-4fd2-b659-064651759e0a",
+            "version": "KqlParameterItem/1.0",
+            "name": "Apps",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "SigninLogs\r\n| summarize Count = count() by AppDisplayName\r\n| order by Count desc, AppDisplayName asc\r\n| project Value = AppDisplayName, Label = strcat(AppDisplayName, ' - ', Count, ' sign-ins'), Selected = false",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "limitSelectTo": 10,
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*"
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "id": "731b315f-4e2c-42a8-bc63-457dcbdbf092",
+            "version": "KqlParameterItem/1.0",
+            "name": "Users",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "SigninLogs\r\n|where AppDisplayName in ({Apps}) or '*' in ({Apps})\r\n| summarize Count = count() by UserDisplayName\r\n| order by Count desc, UserDisplayName asc\r\n| project Value = UserDisplayName, Label = strcat(UserDisplayName, ' - ', Count, ' sign-ins'), Selected = false",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "limitSelectTo": 20,
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "*"
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 2"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| extend SigninType = iff(IsInteractive == true, \"Total Interactive Sign-Ins\", \"Total Non-Interactive Sign-ins\") \r\n|summarize TotalInteractive = countif(SigninType contains \"Total Interactive\"), TotalNonInteractive = countif(SigninType contains \"Total Non-Interactive\"), TotalSignIns = count(SigninType)\r\n|project [\"Total SignIns\"] = TotalSignIns, [\"All Non-Interactive Sign-Ins\"] = TotalNonInteractive, [\"All Interactive Sign-Ins\"] = TotalInteractive  ",
+        "size": 3,
+        "title": "Summary of Total Sign-Ins",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "customWidth": "100",
+      "name": "query - 1"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = SigninLogs\r\n    | where AppDisplayName in ('*') or '*' in ('*')\r\n    | where UserDisplayName in ('*') or '*' in ('*')\r\n    | extend SigninType = iff(IsInteractive == true, \"Interactive\", \"Non-Interactive\")\r\n    | extend errorCode = Status.errorCode\r\n    | extend SigninStatus = case(errorCode == 0, \"Success\", errorCode == 50058, \"Pending user action\", errorCode == 50140, \"Pending user action\", errorCode == 51006, \"Pending user action\", errorCode == 50059, \"Pending user action\", errorCode == 65001, \"Pending user action\", errorCode == 52004, \"Pending user action\", errorCode == 50055, \"Pending user action\", errorCode == 50144, \"Pending user action\", errorCode == 50072, \"Pending user action\", errorCode == 50074, \"Pending user action\", errorCode == 16000, \"Pending user action\", errorCode == 16001, \"Pending user action\", errorCode == 16003, \"Pending user action\", errorCode == 50127, \"Pending user action\", errorCode == 50125, \"Pending user action\", errorCode == 50129, \"Pending user action\", errorCode == 50143, \"Pending user action\", errorCode == 81010, \"Pending user action\", errorCode == 81014, \"Pending user action\", errorCode == 81012, \"Pending user action\", \"Failure\")\r\n    | extend SigninType_Status = strcat(SigninType, \" - \", SigninStatus);\r\ndata\r\n| summarize Count = count() by SigninStatus, SigninType, SigninType_Status\r\n| join kind = fullouter (datatable(SigninStatus: string)['Success', 'Pending action (Interrupts)', 'Failure']) on SigninStatus\r\n| project SigninStatus = iff(SigninStatus == '', SigninStatus1, SigninStatus), Count = iff(SigninStatus == '', 0, Count), SigninType, SigninType_Status\r\n| join kind = inner (\r\n    data\r\n    | make-series Trend = count() default = 0 on TimeGenerated from ago(30d) to now() step 1d by SigninStatus)\r\n    on SigninStatus\r\n| project-away SigninStatus1, TimeGenerated, SigninType\r\n| extend Status = SigninStatus\r\n| union (\r\n    data \r\n    | summarize Count = count() \r\n    | extend jkey = 1\r\n    | join kind=inner (\r\n        data\r\n        | make-series Trend = count() default = 0 on TimeGenerated from ago(30d) to now() step 1d\r\n        | extend jkey = 1)\r\n        on jkey\r\n    | extend SigninType_Status = 'All Sign-ins', Status = '*' \r\n    )\r\n| project-away Status, SigninStatus\r\n| order by Count desc",
+        "size": 3,
+        "title": "Count of Sign-ins by Type",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "showBorder": false,
+          "titleContent": {
+            "columnMatch": "SigninType_Status",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        }
+      },
+      "name": "query - 4"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| extend SigninType = iff(IsInteractive == true, \"Total Interactive Sign-Ins\", \"Total Non-Interactive Sign-ins\") \r\n| summarize count() by SigninType\r\n\r\n",
+        "size": 3,
+        "title": "Interactive vs. Non-Interactive Sign-ins",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Total Non-Interactive Sign-ins",
+              "color": "turquoise"
+            },
+            {
+              "seriesName": "Total Interactive Sign-Ins",
+              "color": "blueDark"
+            }
+          ]
+        }
+      },
+      "name": "query - 5"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Interactive Sign-Ins"
+      },
+      "name": "text - 7"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//Interactive signins by country and city\r\nlet data = SigninLogs\r\n    | extend AppDisplayName = iff(AppDisplayName == '', 'Unknown', AppDisplayName)\r\n    | where AppDisplayName in ('*') or '*' in ('*')\r\n    | where UserDisplayName in ('*') or '*' in ('*')\r\n    | extend SigninType = iff(IsInteractive == true, \"Interactive\", \"Non-Interactive\")\r\n    | extend Country = iff(LocationDetails.countryOrRegion == '', 'Unknown country', tostring(LocationDetails.countryOrRegion))\r\n    | extend City = iff(LocationDetails.city == '', 'Unknown city', tostring(LocationDetails.city))\r\n    | extend errorCode = Status.errorCode\r\n    | extend SigninStatus = case(errorCode == 0, \"Success\", errorCode == 50058, \"Pending user action\", errorCode == 50140, \"Pending user action\", errorCode == 51006, \"Pending user action\", errorCode == 50059, \"Pending user action\", errorCode == 65001, \"Pending user action\", errorCode == 52004, \"Pending user action\", errorCode == 50055, \"Pending user action\", errorCode == 50144, \"Pending user action\", errorCode == 50072, \"Pending user action\", errorCode == 50074, \"Pending user action\", errorCode == 16000, \"Pending user action\", errorCode == 16001, \"Pending user action\", errorCode == 16003, \"Pending user action\", errorCode == 50127, \"Pending user action\", errorCode == 50125, \"Pending user action\", errorCode == 50129, \"Pending user action\", errorCode == 50143, \"Pending user action\", errorCode == 81010, \"Pending user action\", errorCode == 81014, \"Pending user action\", errorCode == 81012, \"Pending user action\", \"Failure\")\r\n    | extend SigninType_Status = strcat(SigninType, \" - \", SigninStatus)\r\n    | where SigninType_Status == '*' or '*' == '*' or '*' == 'All Sign-ins';\r\nlet countryData = data\r\n    | summarize TotalCount = count(), InteractiveTotalCount = countif(SigninType == \"Interactive\"), InteractiveSuccessCount = countif(SigninType_Status == \"Interactive - Success\"), InteractiveFailureCount = countif(SigninType_Status == \"Interactive - Failure\"), InteractiveInterruptCount = countif(SigninType_Status == \"Interactive - Pending user action\") by Country\r\n    | join kind=inner\r\n        (\r\n        data\r\n        | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country\r\n        | project-away TimeGenerated\r\n        )\r\n        on Country\r\n    | project Country, TotalCount, InteractiveTotalCount, InteractiveSuccessCount, InteractiveFailureCount, InteractiveInterruptCount, Trend\r\n    | order by TotalCount desc, Country asc;\r\ndata\r\n| summarize TotalCount = count(), InteractiveTotalCount = countif(SigninType == \"Interactive\"), InteractiveSuccessCount = countif(SigninType_Status == \"Interactive - Success\"), InteractiveFailureCount = countif(SigninType_Status == \"Interactive - Failure\"), InteractiveInterruptCount = countif(SigninType_Status == \"Interactive - Pending user action\") by Country, City\r\n| join kind=inner\r\n    (\r\n    data    \r\n    | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country, City\r\n    | project-away TimeGenerated\r\n    )\r\n    on Country, City\r\n| order by TotalCount desc, Country asc\r\n| project Country, City, TotalCount, InteractiveTotalCount, InteractiveFailureCount, InteractiveInterruptCount, Trend\r\n| join kind=inner \r\n    (\r\n    countryData\r\n    )\r\n    on Country\r\n| project Id = City, Name = City, Type = 'City', ['Sign-in Count'] = TotalCount, Trend, ['Interactive Total Count'] = InteractiveTotalCount, ['Interactive Failure Count'] = InteractiveFailureCount, ['Interactive Interrupt Count'] = InteractiveInterruptCount, ['Interactive Success Rate'] = 1.0 * InteractiveSuccessCount / InteractiveTotalCount, ParentId = Country\r\n| union (\r\n    countryData\r\n    | project Id = Country, Name = Country, Type = 'Country', ['Sign-in Count'] = TotalCount, Trend, ['Interactive Total Count'] = InteractiveTotalCount, ['Interactive Failure Count'] = InteractiveFailureCount, ['Interactive Interrupt Count'] = InteractiveInterruptCount, ['Interactive Success Rate'] = 1.0 * InteractiveSuccessCount / InteractiveTotalCount, ParentId = 'root')\r\n| order by ['Sign-in Count'] desc, Name asc",
+        "size": 3,
+        "title": "Interactive Sign-Ins by Location",
+        "color": "turquoise",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "map",
+        "mapSettings": {
+          "locInfo": "CountryRegion",
+          "locInfoColumn": "Id",
+          "sizeSettings": "Interactive Total Count",
+          "sizeAggregation": "Sum",
+          "legendMetric": "Interactive Total Count",
+          "legendAggregation": "Sum",
+          "itemColorSettings": {
+            "nodeColorField": "Interactive Total Count",
+            "colorAggregation": "Sum",
+            "type": "heatmap",
+            "heatmapPalette": "turquoise"
+          }
+        }
+      },
+      "name": "query - 6"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| where IsInteractive == true\r\n| summarize Count = count() by AppDisplayName\r\n| order by Count desc \r\n",
+        "size": 3,
+        "title": "Top Interactive Sign-ins by App",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "rowLimit": 20,
+          "sortBy": [
+            {
+              "itemKey": "Count",
+              "sortOrder": 2
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "Count",
+            "sortOrder": 2
+          }
+        ]
+      },
+      "customWidth": "50",
+      "name": "query - 8"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| where IsInteractive == true\r\n| summarize Count = count() by UserDisplayName\r\n| order by Count desc \r\n",
+        "size": 3,
+        "title": "Top Interactive Sign-ins by User",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "rowLimit": 20
+        }
+      },
+      "customWidth": "50",
+      "name": "query - 8 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//Interactive signins by country and city\r\nlet data = SigninLogs\r\n    | extend AppDisplayName = iff(AppDisplayName == '', 'Unknown', AppDisplayName)\r\n    | where AppDisplayName in ('*') or '*' in ('*')\r\n    | where UserDisplayName in ('*') or '*' in ('*')\r\n    | extend SigninType = iff(IsInteractive == true, \"Interactive\", \"Non-Interactive\")\r\n    | extend Country = iff(LocationDetails.countryOrRegion == '', 'Unknown country', tostring(LocationDetails.countryOrRegion))\r\n    | extend City = iff(LocationDetails.city == '', 'Unknown city', tostring(LocationDetails.city))\r\n    | extend errorCode = Status.errorCode\r\n    | extend SigninStatus = case(errorCode == 0, \"Success\", errorCode == 50058, \"Pending user action\", errorCode == 50140, \"Pending user action\", errorCode == 51006, \"Pending user action\", errorCode == 50059, \"Pending user action\", errorCode == 65001, \"Pending user action\", errorCode == 52004, \"Pending user action\", errorCode == 50055, \"Pending user action\", errorCode == 50144, \"Pending user action\", errorCode == 50072, \"Pending user action\", errorCode == 50074, \"Pending user action\", errorCode == 16000, \"Pending user action\", errorCode == 16001, \"Pending user action\", errorCode == 16003, \"Pending user action\", errorCode == 50127, \"Pending user action\", errorCode == 50125, \"Pending user action\", errorCode == 50129, \"Pending user action\", errorCode == 50143, \"Pending user action\", errorCode == 81010, \"Pending user action\", errorCode == 81014, \"Pending user action\", errorCode == 81012, \"Pending user action\", \"Failure\")\r\n    | extend SigninType_Status = strcat(SigninType, \" - \", SigninStatus)\r\n    | where SigninType_Status == '*' or '*' == '*' or '*' == 'All Sign-ins';\r\nlet countryData = data\r\n    | summarize TotalCount = count(), InteractiveTotalCount = countif(SigninType == \"Interactive\"), InteractiveSuccessCount = countif(SigninType_Status == \"Interactive - Success\"), InteractiveFailureCount = countif(SigninType_Status == \"Interactive - Failure\"), InteractiveInterruptCount = countif(SigninType_Status == \"Interactive - Pending user action\") by Country\r\n    | join kind=inner\r\n        (\r\n        data\r\n        | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country\r\n        | project-away TimeGenerated\r\n        )\r\n        on Country\r\n    | project Country, TotalCount, InteractiveTotalCount, InteractiveSuccessCount, InteractiveFailureCount, InteractiveInterruptCount, Trend\r\n    | order by TotalCount desc, Country asc;\r\ndata\r\n| summarize TotalCount = count(), InteractiveTotalCount = countif(SigninType == \"Interactive\"), InteractiveSuccessCount = countif(SigninType_Status == \"Interactive - Success\"), InteractiveFailureCount = countif(SigninType_Status == \"Interactive - Failure\"), InteractiveInterruptCount = countif(SigninType_Status == \"Interactive - Pending user action\") by Country, City\r\n| join kind=inner\r\n    (\r\n    data    \r\n    | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country, City\r\n    | project-away TimeGenerated\r\n    )\r\n    on Country, City\r\n| order by TotalCount desc, Country asc\r\n| project Country, City, TotalCount, InteractiveTotalCount, InteractiveFailureCount, InteractiveInterruptCount, Trend\r\n| join kind=inner \r\n    (\r\n    countryData\r\n    )\r\n    on Country\r\n| project Id = City, Name = City, Type = 'City', ['Sign-in Count'] = TotalCount, Trend, ['Interactive Total Count'] = InteractiveTotalCount, ['Interactive Failure Count'] = InteractiveFailureCount, ['Interactive Interrupt Count'] = InteractiveInterruptCount, ['Interactive Success Rate'] = 1.0 * InteractiveSuccessCount / InteractiveTotalCount, ParentId = Country\r\n| union (\r\n    countryData\r\n    | project Id = Country, Name = Country, Type = 'Country', ['Sign-in Count'] = TotalCount, Trend, ['Interactive Total Count'] = InteractiveTotalCount, ['Interactive Failure Count'] = InteractiveFailureCount, ['Interactive Interrupt Count'] = InteractiveInterruptCount, ['Interactive Success Rate'] = 1.0 * InteractiveSuccessCount / InteractiveTotalCount, ParentId = 'root')\r\n| order by ['Sign-in Count'] desc, Name asc\r\n",
+        "size": 3,
+        "showAnalytics": true,
+        "title": "Interactive Sign-ins by County, City",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Id",
+              "formatter": 5
+            },
+            {
+              "columnMatch": "Type",
+              "formatter": 5
+            },
+            {
+              "columnMatch": "Sign-in Count",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "blue"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "Trend",
+              "formatter": 9,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "Interactive Failure Count",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "orange"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "Interactive Interrupt Count",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "orange"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "Interactive Success Rate",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "orange"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "ParentId",
+              "formatter": 5
+            }
+          ],
+          "filter": true,
+          "hierarchySettings": {
+            "idColumn": "Id",
+            "parentColumn": "ParentId",
+            "treeType": 0,
+            "expanderColumn": "Name"
+          }
+        }
+      },
+      "customWidth": "100",
+      "showPin": true,
+      "name": "query - 10"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Non-Interactive Sign-Ins"
+      },
+      "name": "text - 11"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//Non-Interactive signins by country and city\r\nlet data = SigninLogs\r\n    | extend AppDisplayName = iff(AppDisplayName == '', 'Unknown', AppDisplayName)\r\n    | where AppDisplayName in ('*') or '*' in ('*')\r\n    | where UserDisplayName in ('*') or '*' in ('*')\r\n    | extend SigninType = iff(IsInteractive == true, \"Interactive\", \"Non-Interactive\")\r\n    | extend Country = iff(LocationDetails.countryOrRegion == '', 'Unknown country', tostring(LocationDetails.countryOrRegion))\r\n    | extend City = iff(LocationDetails.city == '', 'Unknown city', tostring(LocationDetails.city))\r\n    | extend errorCode = Status.errorCode\r\n    | extend SigninStatus = case(errorCode == 0, \"Success\", errorCode == 50058, \"Pending user action\", errorCode == 50140, \"Pending user action\", errorCode == 51006, \"Pending user action\", errorCode == 50059, \"Pending user action\", errorCode == 65001, \"Pending user action\", errorCode == 52004, \"Pending user action\", errorCode == 50055, \"Pending user action\", errorCode == 50144, \"Pending user action\", errorCode == 50072, \"Pending user action\", errorCode == 50074, \"Pending user action\", errorCode == 16000, \"Pending user action\", errorCode == 16001, \"Pending user action\", errorCode == 16003, \"Pending user action\", errorCode == 50127, \"Pending user action\", errorCode == 50125, \"Pending user action\", errorCode == 50129, \"Pending user action\", errorCode == 50143, \"Pending user action\", errorCode == 81010, \"Pending user action\", errorCode == 81014, \"Pending user action\", errorCode == 81012, \"Pending user action\", \"Failure\")\r\n    | extend SigninType_Status = strcat(SigninType, \" - \", SigninStatus)\r\n    | where SigninType_Status == '*' or '*' == '*' or '*' == 'All Sign-ins';\r\nlet countryData = data\r\n    | summarize TotalCount = count(), NonInteractiveTotalCount = countif(SigninType == \"Non-Interactive\"), NonInteractiveSuccessCount = countif(SigninType_Status == \"Non-Interactive - Success\"), NonInteractiveFailureCount = countif(SigninType_Status == \"Non-Interactive - Failure\"), NonInteractiveInterruptCount = countif(SigninType_Status == \"Non-Interactive - Pending user action\") by Country\r\n    | join kind=inner\r\n        (\r\n        data\r\n        | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country\r\n        | project-away TimeGenerated\r\n        )\r\n        on Country\r\n    | project Country, TotalCount, NonInteractiveTotalCount, NonInteractiveSuccessCount, NonInteractiveFailureCount, NonInteractiveInterruptCount, Trend\r\n    | order by TotalCount desc, Country asc;\r\ndata\r\n| summarize TotalCount = count(), NonInteractiveTotalCount = countif(SigninType == \"Non-Interactive\"), NonInteractiveSuccessCount = countif(SigninType_Status == \"Non-Interactive - Success\"), NonInteractiveFailureCount = countif(SigninType_Status == \"Non-Interactive - Failure\"), NonInteractiveInterruptCount = countif(SigninType_Status == \"Non-Interactive - Pending user action\") by Country, City\r\n| join kind=inner\r\n    (\r\n    data    \r\n    | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country, City\r\n    | project-away TimeGenerated\r\n    )\r\n    on Country, City\r\n| order by TotalCount desc, Country asc\r\n| project Country, City, TotalCount, NonInteractiveTotalCount, NonInteractiveFailureCount, NonInteractiveInterruptCount, Trend\r\n| join kind=inner \r\n    (\r\n    countryData\r\n    )\r\n    on Country\r\n| project Id = City, Name = City, Type = 'City', ['Sign-in Count'] = TotalCount, Trend, ['Non-Interactive Total Count'] = NonInteractiveTotalCount, ['Non-Interactive Failure Count'] = NonInteractiveFailureCount, ['Non-Interactive Interrupt Count'] = NonInteractiveInterruptCount, ['Non-Interactive Success Rate'] = 1.0 * NonInteractiveSuccessCount / NonInteractiveTotalCount, ParentId = Country\r\n| union (\r\n    countryData\r\n    | project Id = Country, Name = Country, Type = 'Country', ['Sign-in Count'] = TotalCount, Trend, ['Non-Interactive Total Count'] = NonInteractiveTotalCount, ['Non-Interactive Failure Count'] = NonInteractiveFailureCount, ['Non-Interactive Interrupt Count'] = NonInteractiveInterruptCount, ['Non-Interactive Success Rate'] = 1.0 * NonInteractiveSuccessCount / NonInteractiveTotalCount, ParentId = 'root')\r\n| order by ['Sign-in Count'] desc, Name asc",
+        "size": 3,
+        "title": "Non-Interactive Sign-ins by Location",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "map",
+        "mapSettings": {
+          "locInfo": "CountryRegion",
+          "locInfoColumn": "Id",
+          "sizeSettings": "Non-Interactive Total Count",
+          "sizeAggregation": "Sum",
+          "legendMetric": "Non-Interactive Total Count",
+          "legendAggregation": "Sum",
+          "itemColorSettings": {
+            "nodeColorField": "Non-Interactive Total Count",
+            "colorAggregation": "Sum",
+            "type": "heatmap",
+            "heatmapPalette": "greenDarkDark"
+          }
+        }
+      },
+      "name": "query - 12"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| where IsInteractive == false\r\n| summarize Count = count() by AppDisplayName\r\n| order by Count desc\r\n",
+        "size": 3,
+        "title": "Top Non-Interactive Sign-ins by App",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "rowLimit": 20
+        }
+      },
+      "customWidth": "50",
+      "name": "query - 8 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| where IsInteractive == false\r\n| summarize Count = count() by UserDisplayName\r\n| order by Count desc \r\n",
+        "size": 3,
+        "title": "Top Non-Interactive Sign-ins by User",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "rowLimit": 20
+        }
+      },
+      "customWidth": "50",
+      "name": "query - 8 - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| where IsInteractive == false\r\n| summarize Count = count() by AppDisplayName\r\n| order by Count asc\r\n",
+        "size": 3,
+        "title": "Non-Interactive with low Sign-ins",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "rowLimit": 20
+        }
+      },
+      "customWidth": "50",
+      "name": "query - 8 - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SigninLogs\r\n| where IsInteractive == false\r\n| summarize Count = count() by AppDisplayName\r\n| where Count == 0\r\n",
+        "size": 3,
+        "title": "Apps where Non-Interactive Sign-ins is Zero",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "rowLimit": 20
+        }
+      },
+      "customWidth": "50",
+      "name": "query - 8 - Copy - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//Non-Interactive signins by country and city\r\nlet data = SigninLogs\r\n    | extend AppDisplayName = iff(AppDisplayName == '', 'Unknown', AppDisplayName)\r\n    | where AppDisplayName in ('*') or '*' in ('*')\r\n    | where UserDisplayName in ('*') or '*' in ('*')\r\n    | extend SigninType = iff(IsInteractive == true, \"Interactive\", \"Non-Interactive\")\r\n    | extend Country = iff(LocationDetails.countryOrRegion == '', 'Unknown country', tostring(LocationDetails.countryOrRegion))\r\n    | extend City = iff(LocationDetails.city == '', 'Unknown city', tostring(LocationDetails.city))\r\n    | extend errorCode = Status.errorCode\r\n    | extend SigninStatus = case(errorCode == 0, \"Success\", errorCode == 50058, \"Pending user action\", errorCode == 50140, \"Pending user action\", errorCode == 51006, \"Pending user action\", errorCode == 50059, \"Pending user action\", errorCode == 65001, \"Pending user action\", errorCode == 52004, \"Pending user action\", errorCode == 50055, \"Pending user action\", errorCode == 50144, \"Pending user action\", errorCode == 50072, \"Pending user action\", errorCode == 50074, \"Pending user action\", errorCode == 16000, \"Pending user action\", errorCode == 16001, \"Pending user action\", errorCode == 16003, \"Pending user action\", errorCode == 50127, \"Pending user action\", errorCode == 50125, \"Pending user action\", errorCode == 50129, \"Pending user action\", errorCode == 50143, \"Pending user action\", errorCode == 81010, \"Pending user action\", errorCode == 81014, \"Pending user action\", errorCode == 81012, \"Pending user action\", \"Failure\")\r\n    | extend SigninType_Status = strcat(SigninType, \" - \", SigninStatus)\r\n    | where SigninType_Status == '*' or '*' == '*' or '*' == 'All Sign-ins';\r\nlet countryData = data\r\n    | summarize TotalCount = count(), NonInteractiveTotalCount = countif(SigninType == \"Non-Interactive\"), NonInteractiveSuccessCount = countif(SigninType_Status == \"Non-Interactive - Success\"), NonInteractiveFailureCount = countif(SigninType_Status == \"Non-Interactive - Failure\"), NonInteractiveInterruptCount = countif(SigninType_Status == \"Non-Interactive - Pending user action\") by Country\r\n    | join kind=inner\r\n        (\r\n        data\r\n        | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country\r\n        | project-away TimeGenerated\r\n        )\r\n        on Country\r\n    | project Country, TotalCount, NonInteractiveTotalCount, NonInteractiveSuccessCount, NonInteractiveFailureCount, NonInteractiveInterruptCount, Trend\r\n    | order by TotalCount desc, Country asc;\r\ndata\r\n| summarize TotalCount = count(), NonInteractiveTotalCount = countif(SigninType == \"Non-Interactive\"), NonInteractiveSuccessCount = countif(SigninType_Status == \"Non-Interactive - Success\"), NonInteractiveFailureCount = countif(SigninType_Status == \"Non-Interactive - Failure\"), NonInteractiveInterruptCount = countif(SigninType_Status == \"Non-Interactive - Pending user action\") by Country, City\r\n| join kind=inner\r\n    (\r\n    data    \r\n    | make-series Trend = count() default = 0 on TimeGenerated in range(ago(30d), now(), 1d) by Country, City\r\n    | project-away TimeGenerated\r\n    )\r\n    on Country, City\r\n| order by TotalCount desc, Country asc\r\n| project Country, City, TotalCount, NonInteractiveTotalCount, NonInteractiveFailureCount, NonInteractiveInterruptCount, Trend\r\n| join kind=inner \r\n    (\r\n    countryData\r\n    )\r\n    on Country\r\n| project Id = City, Name = City, Type = 'City', ['Sign-in Count'] = TotalCount, Trend, ['Non-Interactive Total Count'] = NonInteractiveTotalCount, ['Non-Interactive Failure Count'] = NonInteractiveFailureCount, ['Non-Interactive Interrupt Count'] = NonInteractiveInterruptCount, ['Non-Interactive Success Rate'] = 1.0 * NonInteractiveSuccessCount / NonInteractiveTotalCount, ParentId = Country\r\n| union (\r\n    countryData\r\n    | project Id = Country, Name = Country, Type = 'Country', ['Sign-in Count'] = TotalCount, Trend, ['Non-Interactive Total Count'] = NonInteractiveTotalCount, ['Non-Interactive Failure Count'] = NonInteractiveFailureCount, ['Non-Interactive Interrupt Count'] = NonInteractiveInterruptCount, ['Non-Interactive Success Rate'] = 1.0 * NonInteractiveSuccessCount / NonInteractiveTotalCount, ParentId = 'root')\r\n| order by ['Sign-in Count'] desc, Name asc",
+        "size": 3,
+        "showAnalytics": true,
+        "title": "Non-Interactive Sign-ins by County, City",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Id",
+              "formatter": 5
+            },
+            {
+              "columnMatch": "Type",
+              "formatter": 5
+            },
+            {
+              "columnMatch": "Sign-in Count",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "blue"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "Trend",
+              "formatter": 9,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            },
+            {
+              "columnMatch": "Interactive Failure Count",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "orange"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "Interactive Interrupt Count",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "orange"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "Interactive Success Rate",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "orange"
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            },
+            {
+              "columnMatch": "ParentId",
+              "formatter": 5
+            }
+          ],
+          "filter": true,
+          "hierarchySettings": {
+            "idColumn": "Id",
+            "parentColumn": "ParentId",
+            "treeType": 0,
+            "expanderColumn": "Name"
+          }
+        }
+      },
+      "customWidth": "100",
+      "showPin": true,
+      "name": "query - 10 - Copy"
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/ab48f397-fc82-4634-aa52-62dd91b3ebaa/resourcegroups/woodgrove-rg/providers/microsoft.operationalinsights/workspaces/woodgrove-loganalyiticsworkspace"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
